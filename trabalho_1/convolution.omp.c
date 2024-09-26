@@ -4,8 +4,7 @@
 #define HUES 256
 
 typedef struct {
-    int **value;
-    int size;
+    int **value, size;
 } Matrix;
 
 // NOTE: Memory allocation and deallocation
@@ -15,7 +14,7 @@ Matrix generateImage(int size, int offset) {
     Matrix image = {malloc((size + 2 * offset) * sizeof(int *)), size};
 
 #pragma omp parallel for
-    for (i = 0; i < size; i++)
+    for (i = 0; i < size + 2 * offset; i++)
         image.value[i] = calloc((size + 2 * offset), sizeof(int));
 
     for (i = offset; i < size + offset; i++)
@@ -34,10 +33,10 @@ Matrix generateFilter(int size) {
     return filter;
 }
 
-void freeMatrix(Matrix m) {
+void freeMatrix(Matrix m, int size) {
     int i;
 #pragma omp parallel for
-    for (i = 0; i < m.size; i++)
+    for (i = 0; i < size; i++)
         free(m.value[i]);
     free(m.value);
 }
@@ -45,24 +44,25 @@ void freeMatrix(Matrix m) {
 // NOTE: Convolution implementation
 
 int convolution(Matrix image, Matrix filter, int i, int j) {
-    int k, l, sum = 0;
+    int k, l, m, sum = 0;
+
     for (k = 0; k < filter.size; k++, i++)
-        for (l = 0; l < filter.size; l++, j++)
-            sum = (sum + image.value[i][j] * filter.value[k][l] / 10) % HUES;
-    return sum;
+        for (l = 0, m = j; l < filter.size; l++, m++)
+            sum += image.value[i][m] * filter.value[k][l] / 10;
+    return (sum >= HUES) ? HUES - 1 : sum;
 }
 
 void processImage(Matrix image, Matrix filter, int *max, int *min) {
-    int i, j, sum, local_max = *max, local_min = *min;
+    int i, j, sum, local_max = 0, local_min = HUES - 1;
 #pragma omp parallel for collapse(2) reduction(min : local_min)                \
     reduction(max : local_max)
     for (i = 0; i < image.size; i++) {
         for (j = 0; j < image.size; j++) {
             sum = convolution(image, filter, i, j);
-            if (sum > *max)
-                *max = sum;
-            if (sum < *min)
-                *min = sum;
+            if (sum > local_max)
+                local_max = sum;
+            if (sum < local_min)
+                local_min = sum;
         }
     }
     *min = local_min;
@@ -70,8 +70,7 @@ void processImage(Matrix image, Matrix filter, int *max, int *min) {
 }
 
 int main(void) {
-    int n, m, seed;
-    int max = 0, min = HUES - 1;
+    int n, m, seed, max, min;
     Matrix image, filter;
 
     scanf("%d %d %d", &n, &m, &seed);
@@ -85,9 +84,9 @@ int main(void) {
 #pragma omp section
         printf("%d %d\n", max, min);
 #pragma omp section
-        freeMatrix(image);
+        freeMatrix(image, n + 2 * (m / 2));
 #pragma omp section
-        freeMatrix(filter);
+        freeMatrix(filter, m);
     }
     return EXIT_SUCCESS;
 }

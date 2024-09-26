@@ -48,7 +48,7 @@ int convolution(Matrix image, Matrix filter, int i, int j) {
     int k, l, sum = 0;
     for (k = 0; k < filter.size; k++, i++)
         for (l = 0; l < filter.size; l++, j++)
-            sum = (sum + image.value[i][j] * filter.value[k][l]) % HUES;
+            sum = (sum + image.value[i][j] * filter.value[k][l] / 10) % HUES;
     return sum;
 }
 

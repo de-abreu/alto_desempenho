@@ -46,14 +46,11 @@ void freeMatrix(Matrix m) {
 // NOTE: Convolution implementation
 
 int convolution(Matrix image, Matrix filter, int i, int j) {
-    int k, l, offset = filter.size / 2, sum = 0;
-    while (sum < HUES)
-        for (k = 0; k < filter.size; k++) {
-            for (l = 0; l < filter.size; l++) {
-                sum += image.value[i]
-            }
-        }
-    return sum % HUES;
+    int k, l, sum = 0;
+    for (k = 0; k < filter.size; k++, i++)
+        for (l = 0; l < filter.size; l++, j++)
+            sum = (sum + image.value[i][j] * filter.value[k][l]) % HUES;
+    return sum;
 }
 
 void processImage(Matrix image, Matrix filter, char *max, char *min) {

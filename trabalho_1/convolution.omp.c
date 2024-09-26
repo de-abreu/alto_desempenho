@@ -1,3 +1,7 @@
+/* Autores:
+ * Guilherme de Abreu Barreto, nUSP: 12543033
+ * Miguel Reis Araujo        , nUSP: substituir
+ */
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>

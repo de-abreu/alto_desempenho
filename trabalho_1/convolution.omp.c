@@ -48,12 +48,13 @@ void freeMatrix(Matrix m, int size) {
 // NOTE: Convolution implementation
 
 int convolution(Matrix image, Matrix filter, int i, int j) {
-    int k, l, m;
+    int k, l;
     float sum = 0;
 
-    for (k = 0; k < filter.size; k++, i++)
-        for (l = 0, m = j; l < filter.size; l++, m++)
-            sum += (float)image.value[i][m] * filter.value[k][l] / 10;
+#pragma omp parallel for collapse(2) reduction(+ : sum)
+    for (k = 0; k < filter.size; k++)
+        for (l = 0; l < filter.size; l++)
+            sum += (float)image.value[i + k][j + l] * filter.value[k][l] / 10;
     return (sum >= HUES) ? HUES - 1 : sum;
 }
 

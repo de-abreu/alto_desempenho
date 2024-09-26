@@ -54,8 +54,9 @@ int convolution(Matrix image, Matrix filter, int i, int j) {
 }
 
 void processImage(Matrix image, Matrix filter, char *max, char *min) {
-    int i, j, sum;
-#pragma omp parallel for collapse(2) reduction(min : *min) reduction(max : *max)
+    int i, j, sum, local_max = *max, local_min = *min;
+#pragma omp parallel for collapse(2) reduction(min : local_min)                \
+    reduction(max : local_max)
     for (i = 0; i < image.size; i++) {
         for (j = 0; j < image.size; j++) {
             sum = convolution(image, filter, i, j);
@@ -65,6 +66,8 @@ void processImage(Matrix image, Matrix filter, char *max, char *min) {
                 *min = sum;
         }
     }
+    *min = local_min;
+    *max = local_max;
 }
 
 int main(void) {
@@ -81,7 +84,7 @@ int main(void) {
 #pragma omp parallel sections
     {
 #pragma omp section
-        printf("%d %d", max, min);
+        printf("%d %d\n", max, min);
 #pragma omp section
         freeMatrix(image);
 #pragma omp section

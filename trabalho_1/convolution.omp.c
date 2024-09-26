@@ -4,7 +4,7 @@
 #define HUES 256
 
 typedef struct {
-    char **value;
+    int **value;
     int size;
 } Matrix;
 
@@ -12,11 +12,11 @@ typedef struct {
 
 Matrix generateImage(int size, int offset) {
     int i, j;
-    Matrix image = {malloc((size + 2 * offset) * sizeof(char *)), size};
+    Matrix image = {malloc((size + 2 * offset) * sizeof(int *)), size};
 
 #pragma omp parallel for
     for (i = 0; i < size; i++)
-        image.value[i] = calloc((size + 2 * offset), sizeof(char));
+        image.value[i] = calloc((size + 2 * offset), sizeof(int));
 
     for (i = offset; i < size + offset; i++)
         for (j = offset; j < size + offset; j++)
@@ -26,11 +26,10 @@ Matrix generateImage(int size, int offset) {
 
 Matrix generateFilter(int size) {
     int i, j;
-    Matrix filter = {malloc(size * sizeof(char *)), size};
+    Matrix filter = {malloc(size * sizeof(int *)), size};
 
     for (i = 0; i < size; i++)
-        for (j = 0, filter.value[i] = malloc(size * sizeof(char)); j < size;
-             j++)
+        for (j = 0, filter.value[i] = malloc(size * sizeof(int)); j < size; j++)
             filter.value[i][j] = rand() % 10;
     return filter;
 }
@@ -53,7 +52,7 @@ int convolution(Matrix image, Matrix filter, int i, int j) {
     return sum;
 }
 
-void processImage(Matrix image, Matrix filter, char *max, char *min) {
+void processImage(Matrix image, Matrix filter, int *max, int *min) {
     int i, j, sum, local_max = *max, local_min = *min;
 #pragma omp parallel for collapse(2) reduction(min : local_min)                \
     reduction(max : local_max)
@@ -72,7 +71,7 @@ void processImage(Matrix image, Matrix filter, char *max, char *min) {
 
 int main(void) {
     int n, m, seed;
-    char max = CHAR_MIN, min = CHAR_MAX;
+    int max = 0, min = HUES - 1;
     Matrix image, filter;
 
     scanf("%d %d %d", &n, &m, &seed);

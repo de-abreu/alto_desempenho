@@ -54,16 +54,17 @@ int convolution(Matrix image, Matrix filter, int i, int j) {
 }
 
 void processImage(Matrix image, Matrix filter, char *max, char *min) {
-    int i, j, offset = filter.size / 2, sum;
+    int i, j, sum;
 #pragma omp parallel for collapse(2) reduction(min : *min) reduction(max : *max)
-    for (i = 0; i < image.size; i++)
+    for (i = 0; i < image.size; i++) {
         for (j = 0; j < image.size; j++) {
-            sum = convolution(image, filter, i + offset, j + offset);
+            sum = convolution(image, filter, i, j);
             if (sum > *max)
                 *max = sum;
             if (sum < *min)
                 *min = sum;
         }
+    }
 }
 
 int main(void) {

@@ -1,4 +1,6 @@
-/* Autores:
+/* Versão do algoritmo de convolução com geração de imagem.
+ *
+ * Autores:
  * Guilherme de Abreu Barreto, nUSP: 12543033
  * Miguel Reis de Araújo     , nUSP: 12752457
  */
@@ -14,28 +16,38 @@ typedef struct {
 
 // NOTE: Memory allocation and deallocation
 
-Matrix storeImage(FILE *f, int offset) {
+Matrix storeImage(char *src_path, int offset) {
     int height, width, i, j;
+    FILE *f = fopen(src_path, "r");
+
     fscanf(f, "P2\n%d %d\n255\n", &width, &height);
     Matrix image = {malloc((height + 2 * offset) * sizeof(int *)), height,
                     width};
 
+#pragma omp parallel
+    {
+#pragma omp for nowait
+        for (i = 0; i < offset; i++)
+            image.value[i] = calloc((width + 2 * offset), sizeof(int));
+
+#pragma omp for collapse(2) nowait
+        for (i = 0; i < height; i++)
+            for (j = 0; j < width; j++)
+                fscanf(f, " %d", image.value[i + offset] + (j + offset));
+
 #pragma omp parallel for
-    for (i = 0; i < offset; i++)
-        image.value[i] = calloc((width + 2 * offset), sizeof(int));
-
-#pragma omp parallel for collapse(2)
-    for (i = 0; i < height; i++)
-        for (j = 0; j < width; j++)
-            fscanf(f, " %d", image.value[i + offset] + (j + offset));
-
+        for (i = 0; i < offset; i++)
+            image.value[height + i] = calloc((width + 2 * offset), sizeof(int));
+    }
+    fclose(f);
     return image;
 }
 
-Matrix generateFilter(int size) {
+Matrix generateFilter(int size, int seed) {
     int i, j;
     Matrix filter = {malloc(size * sizeof(int *)), size};
 
+    srand(seed);
     for (i = 0; i < size; i++)
         for (j = 0, filter.value[i] = malloc(size * sizeof(int)); j < size; j++)
             filter.value[i][j] = rand() % 10;
@@ -93,18 +105,37 @@ Matrix processImage(Matrix src, Matrix filter, int *max, int *min) {
 
 // NOTE: Function to save resulting image
 
-void saveImage(Matrix dest, char *dest_path) {}
+void saveImage(Matrix dest, char *dest_path) {
+    int i, j;
+    FILE *f = fopen(dest_path, "w");
+
+    printf("P2\n%d %d\n%d\n", dest.width, dest.height, HUES - 1);
+
+    for (i = 0; i < dest.height; i++) {
+        fprintf(f, "%d", dest.value[i][0]);
+        for (j = 1; j < dest.width; j++)
+            fprintf(f, " %d", dest.value[i][j]);
+        fprintf(f, "\n");
+    }
+    fclose(f);
+}
 
 int main(void) {
     char src_path[256], dest_path[256];
-    int height, width, m, seed, max, min;
+    int height, width, size, seed, max, min;
     Matrix src, dest, filter;
 
-    if (!scanf("%s %s %d", src_path, dest_path, &seed))
+    if (!scanf("%s %s %d %d", src_path, dest_path, &size, &seed))
         return EXIT_FAILURE;
-    srand(seed);
-    src = storeImage(fopen(src_path, "r"), m / 2);
-    filter = generateFilter(m);
+
+#pragma omp parallel sections
+    {
+#pragma omp section
+        src = storeImage(src_path, size / 2);
+#pragma omp section
+        filter = generateFilter(size, seed);
+    }
+
     dest = processImage(src, filter, &max, &min);
 
 #pragma omp parallel sections
@@ -119,7 +150,7 @@ int main(void) {
                "%d\n",
                dest_path, max, min);
 #pragma omp section
-        freeMatrix(src, src.height + m - 1);
+        freeMatrix(src, src.height + size - 1);
 #pragma omp section
         freeMatrix(filter, filter.height);
     }

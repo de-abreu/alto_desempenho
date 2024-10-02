@@ -1,4 +1,6 @@
-/* Autores:
+/* Versão do algoritmo de convolução para avaliação na plataforma RunCodes.
+ *
+ * Autores:
  * Guilherme de Abreu Barreto, nUSP: 12543033
  * Miguel Reis de Araújo     , nUSP: 12752457
  */

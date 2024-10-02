@@ -1,5 +1,16 @@
 # Trabalho Prático 1: Convolução
-## Particionamento
+| Autores                    | nUSP     |
+| :---                       | :---     |
+| Guilherme de Abreu Barreto | 12543033 |
+| Miguel Reis de Araújo      | 12752457 |
+
+## Introdução
+Conforme proposta projetual, desenvolvemos um algoritmo de convolução com programação paralela por meio da metodologia PCAM (*Partitioning, Communication, Aglomeration, Mapping*). O algoritmo foi desenvolvido em duas versões: uma para submissão à plataforma de avaliação RunCodes, conforme especificado, e outra para aplicação sobre uma imagens em formato `.pgm`: um formato de arquivo para imagens rasterizadas monocromáticas.
+
+À seguir são descritos o processo de aplicação do PCAM, o algoritmo em sua segunda versão e o resultado da aplicação sobre algumas imagens de amostra.
+
+## PCAM
+### Particionamento
 
 Parte do algorítimo é paralelizada por dados e outra parte por instrução: observa-se no grafo abaixo, onde as tarefas que geram múltiplas tarefas indicam paralelização por instrução e as tarefas que estão anotadas como `**paralelizável**`, indicam paralelização por dados.
 
@@ -48,10 +59,10 @@ flowchart TD
         Q --> S(**Paralelizável:** para cada coluna j = f/2 a j + f/2 - 1 aplicar convolução)
         S --> T(**Paralelizável:** para cada linha k no filtro e i + k na imagem)
         T --> X(**Paralelizável:** para cada coluna l no filtro e j + l na imagem aplicar multiplicação e adicionar ao somatório)
-        X --> Y(Comparar somatórios locais e atribui valor aos máximos e mínimos locais)
-        Y --> Z(Compara máximos e mínimos locais e atribui ao máximo e mínimo globais)
+        X --> Y(Comparar somatórios locais e atribuir valor aos máximos e mínimos locais)
+        Y --> Z(Comparar máximos e mínimos locais e aferir o máximo e mínimo globais)
     end
-    subgraph r3 [Salvamento e exibição de resultados, desalocação da memória]
+    subgraph r3 [Escrita, exibição de resultados e desalocação da memória]
         style r3 stroke-dasharray: 5, 5, fill:none, stroke: grey
         Z --> W(Imprime resultados)
         Z --> AC(**Paralelizável:** Desaloca memória para filtro)
@@ -63,7 +74,18 @@ flowchart TD
     AC --> EXIT
     W --> EXIT
 ```
-## Comunicação
-## Aglomeração
-## Mapeamento
+### Comunicação
+
+O fluxo dos dados em nosso programa segue o grafo descrito acima em três porções principais: No primeiro conjunto de tarefas ocorre a leitura dos dados pertinentes ao processamento, isso é feito 
+
+### Aglomeração
+
+Este método de aglomeração utiliza uma plataforma MIMD (Múltiplas Instruções, Múltiplos Dados) com memória compartilhada, porém com um número limitado de processadores. Para maximizar a eficiência com poucos processadores, a granularidade das tarefas é aumentada, atribuindo maior carga de trabalho a cada uma. É criada uma correspondência direta (1:1) entre o número de processos e o número de elementos de processamento disponíveis.
+
+O processamento das matrizes é dividido em blocos de tarefas, que são então submetidos a um pool. Este pool gerencia a alocação dos blocos aos processadores disponíveis. Dependendo do tamanho da imagem, das dimensões do filtro e dos recursos computacionais, esses blocos podem ser ainda mais subdivididos para processamento paralelo em blocos menores.
+
+A estratégia de alocação de tarefas garante que cada thread acesse uma combinação única de índices, eliminando a necessidade de mecanismos de sincronização, como regiões críticas. Variáveis compartilhadas, como `sum`, `local_min` e `local_max`, são replicadas localmente para cada thread. Após o processamento individual, essas cópias locais são consolidadas através de um processo de redução.
+
+
+### Mapeamento
 A atribuição de tarefas é realizada de forma dinâmica. Cada unidade de processamento deve ser alocada para um processo, e essa gestão é responsabilidade do Sistema Operacional da máquina. A expectativa é que a distribuição seja uniforme entre os elementos de processamento. Quando uma unidade de processamento fica ociosa, ela consome um bloco de tarefas do pool de processamento.

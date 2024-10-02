@@ -2,7 +2,6 @@
 ## Particionamento
 
 ```mermaid
-
 flowchart TD
     A[Início] --> B(Ler dimensões x,y da imagem)
     subgraph r1 [Leitura e inicialização das variáveis]
@@ -23,15 +22,14 @@ flowchart TD
     subgraph r2 [Processamento da imagem]
         style r2 stroke-dasharray: 5, 5, fill:none, stroke: grey
 
-        M --> O(**Paralelizável:** para cada linha i = f/2 a x + f/2 - 1 da imagem)
+        M --> O(**Paralelizável:** Inicializar variáveis locais de mínimo, máximo e somatório)
         L --> O
         f --> O
         J --> O
         H --> O
         N --> O
-        O --> Q(**Paralelizável:** Inicializar variáveis locais de mínimo e máximo)
-        Q --> R(**Paralelizável**: para cada linha i = f/2 a i + f/2 - 1 )
-        R --> S(**Paralelizável:** para cada coluna j = f/2 a j + f/2 - 1 inicializar variável local de somatório e aplicar convolução)
+        O --> Q(**Paralelizável:** para cada linha i = f/2 a x + f/2 - 1 da imagem)
+        Q --> S(**Paralelizável:** para cada coluna j = f/2 a j + f/2 - 1 aplicar convolução)
         S --> T(**Paralelizável:** para cada linha k no filtro e i + k na imagem)
         T --> X(**Paralelizável:** para cada coluna l no filtro e j + l na imagem aplicar multiplicação e adicionar ao somatório)
         X --> Y(Comparar somatórios locais e atribui valor aos máximos e mínimos locais)

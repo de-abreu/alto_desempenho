@@ -64,6 +64,15 @@ flowchart TD
     W --> EXIT
 ```
 ## Comunicação
+
+O fluxo dos dados segue o grafo de dependências das tarefas. as dimensões obtitas pela entrada são enviadas para respectivas tarefas, que geram a imagem e o filtro de forma paralela.
+
+Para fazer o processamento da imagem, primeiro é necessário garantir que temos tanto a imagem quanto o filtro disponiveis, portanto precisamos fazer uma sincronização nessa etapa, que será feita através de um barramento.
+
+Em seguida se inicia o processamento da imagem, que recebe os dados das tarefas anteriores e distribui para as respectivas tarefas que aplicam a convolução em cada pixel. Ao final do processamento é necessário outra barreira para garantir que todas as tarefas completaram antes de seguirmos para a próxima etapa. Também são utilizadas operações de redução para unificar o resultado da convolução e identificar o máximo e minimo global.
+
+A etapa de exibição recebe o resultado da convolução das tarefas anteriores, o máximo e minimo global, salva o resultado na imagem de destino e imprime o resultado.
+
 ## Aglomeração
 ## Mapeamento
 A atribuição de tarefas é realizada de forma dinâmica. Cada unidade de processamento deve ser alocada para um processo, e essa gestão é responsabilidade do Sistema Operacional da máquina. A expectativa é que a distribuição seja uniforme entre os elementos de processamento. Quando uma unidade de processamento fica ociosa, ela consome um bloco de tarefas do pool de processamento.

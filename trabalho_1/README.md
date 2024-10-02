@@ -74,9 +74,19 @@ flowchart TD
     AC --> EXIT
     W --> EXIT
 ```
+
 ### Comunicação
 
-O fluxo dos dados em nosso programa segue o grafo descrito acima em três porções principais: No primeiro conjunto de tarefas ocorre a leitura dos dados pertinentes ao processamento, isso é feito 
+Conforme pode ser observado no grafo, o algoritmo pode ser dividido em três grandes etapas; na execução do código elas são separadas por barreiras de sincronização.
+
+Inicialmente, as dimensões obtitas pela entrada são enviadas para respectivas tarefas, que geram a imagem e o filtro de forma paralela.
+
+Para fazer o processamento da imagem, primeiro é necessário garantir que temos tanto a imagem quanto o filtro disponiveis, portanto precisamos fazer uma sincronização nessa etapa, que será feita através de uma barreira.
+
+Em seguida se inicia o processamento da imagem, que recebe os dados das tarefas anteriores e distribui para as respectivas tarefas que aplicam a convolução em cada pixel. Ao final do processamento é necessário outra barreira para garantir que todas as tarefas completaram antes de seguirmos para a próxima etapa. Também são utilizadas operações de redução para unificar o resultado da convolução e identificar o máximo e minimo global.
+
+A etapa de exibição recebe o resultado da convolução das tarefas anteriores, o máximo e minimo global, salva o resultado na imagem de destino e imprime o máximo e minimo global.
+
 
 ### Aglomeração
 
@@ -85,7 +95,7 @@ Este método de aglomeração utiliza uma plataforma MIMD (Múltiplas Instruçõ
 O processamento das matrizes é dividido em blocos de tarefas, que são então submetidos a um pool. Este pool gerencia a alocação dos blocos aos processadores disponíveis. Dependendo do tamanho da imagem, das dimensões do filtro e dos recursos computacionais, esses blocos podem ser ainda mais subdivididos para processamento paralelo em blocos menores.
 
 A estratégia de alocação de tarefas garante que cada thread acesse uma combinação única de índices, eliminando a necessidade de mecanismos de sincronização, como regiões críticas. Variáveis compartilhadas, como `sum`, `local_min` e `local_max`, são replicadas localmente para cada thread. Após o processamento individual, essas cópias locais são consolidadas através de um processo de redução.
-
-
 ### Mapeamento
 A atribuição de tarefas é realizada de forma dinâmica. Cada unidade de processamento deve ser alocada para um processo, e essa gestão é responsabilidade do Sistema Operacional da máquina. A expectativa é que a distribuição seja uniforme entre os elementos de processamento. Quando uma unidade de processamento fica ociosa, ela consome um bloco de tarefas do pool de processamento.
+
+## Algoritmo e aplicação

@@ -11,11 +11,11 @@ Umas das três novas tarefas geradas é responsável por preencher as `f/2` colu
 
 Após a inicialização da imagem, partimos para o processamento, onde, para cada pixel da imagem, nós inicializamos uma variável local de somatório e aplicamos a convolução de forma paralela.
 
-A convolução aplica a multiplicação e adiciona a variável somatório, paralelamente, para cada pixel do filtro. Cada thread executada paralelamente tem sua própria variável sum local e ao final é feita a redução para unificar a variável.
+A convolução aplica a multiplicação e adiciona a variável somatório, paralelamente, para cada pixel do filtro. Cada thread executada paralelamente tem sua própria variável `sum` local e ao final é feita a redução para unificar a variável.
 
-Depos de aplicar a convolução, nós comparamos os somatórios e tribuimos os valores maiximos e minimos locais de cada thread, e depois comparamos esses valores para atribuir os valores globais.
+Depois de aplicar a convolução, nós comparamos os somatórios e atribuimos os valores maximos e minimos locais de cada thread, e depois comparamos esses valores para atribuir os valores globais.
 
-Em seguida, partimos pra o slvament e a exibição dos resultdos, onde geramos tarefas para desalocar a memória do filtrio, salvar o resultado da convulução em uma imagem de destino, desalocar a memória da imagem e imprimir os resultados, finalizado a execução do programa ao final desses processos.
+Em seguida, partimos pra o salvamento e a exibição dos resultados, onde geramos tarefas para desalocar a memória do filtro, salvar o resultado da convolução em uma imagem de destino, desalocar a memória da imagem e imprimir os resultados, finalizado a execução do programa ao final desses processos.
 
 ```mermaid
 flowchart TD

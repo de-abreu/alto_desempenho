@@ -14,7 +14,7 @@ typedef struct {
 
 // NOTE: Memory allocation and deallocation
 
-Matrix generateImage(FILE *f, int offset) {
+Matrix storeImage(FILE *f, int offset) {
     int height, width, i, j;
     fscanf(f, "P2\n%d %d\n255\n", &width, &height);
     Matrix image = {malloc((height + 2 * offset) * sizeof(int *)), height,
@@ -42,10 +42,10 @@ Matrix generateFilter(int size) {
     return filter;
 }
 
-void freeMatrix(Matrix m, int size) {
+void freeMatrix(Matrix m, int height) {
     int i;
 #pragma omp parallel for
-    for (i = 0; i < size; i++) {
+    for (i = 0; i < height; i++) {
         free(m.value[i]);
     }
     free(m.value);
@@ -58,21 +58,27 @@ int convolution(Matrix image, Matrix filter, int i, int j) {
     float sum = 0;
 
 #pragma omp parallel for simd collapse(2) reduction(+ : sum)
-    for (k = 0; k < filter.size; k++) {
-        for (l = 0; l < filter.size; l++) {
+    for (k = 0; k < filter.height; k++) {
+        for (l = 0; l < filter.height; l++) {
             sum += (float)image.value[i + k][j + l] * filter.value[k][l] / 10;
         }
     }
     return (sum >= HUES) ? HUES - 1 : sum;
 }
 
-void processImage(Matrix image, Matrix filter, int *max, int *min) {
+Matrix processImage(Matrix src, Matrix filter, int *max, int *min) {
     int i, j, sum, local_max = 0, local_min = HUES - 1;
+    Matrix dest = {malloc(src.height * sizeof(int *)), src.height, src.width};
+
+#pragma omp parallel for
+    for (i = 0; i < dest.height; i++)
+        dest.value[i] = malloc(dest.width * sizeof(int));
+
 #pragma omp parallel for collapse(2) reduction(min : local_min)                \
-    reduction(max : local_max)
-    for (i = 0; i < image.size; i++) {
-        for (j = 0; j < image.size; j++) {
-            sum = convolution(image, filter, i, j);
+    reduction(max : local_max) private(sum)
+    for (i = 0; i < src.height; i++) {
+        for (j = 0; j < src.width; j++) {
+            sum = convolution(src, filter, i, j);
             if (sum > local_max) {
                 local_max = sum;
             }
@@ -88,27 +94,30 @@ void processImage(Matrix image, Matrix filter, int *max, int *min) {
 int main(void) {
     char src_path[256], dest_path[256];
     int height, width, m, seed, max, min;
-    Matrix image, filter;
+    Matrix src, dest, filter;
 
     if (!scanf("%s %s %d", src_path, dest_path, &seed))
         return EXIT_FAILURE;
     srand(seed);
-    image = generateImage(fopen(src_path, "r"), m / 2);
+    src = storeImage(fopen(src_path, "r"), m / 2);
     filter = generateFilter(m);
-    processImage(image, filter, &max, &min);
+    dest = processImage(src, filter, &max, &min);
 
 #pragma omp parallel sections
     {
 #pragma omp section
-        saveImage(image, dest_path);
+        {
+            saveImage(dest, dest_path);
+            freeMatrix(dest, dest.height);
+        }
 #pragma omp section
         printf("Image saved at %s, maximum value: %d, minimum value : "
                "%d\n",
                dest_path, max, min);
 #pragma omp section
-        freeMatrix(image, n + 2 * (m / 2));
+        freeMatrix(src, src.height + m - 1);
 #pragma omp section
-        freeMatrix(filter, m);
+        freeMatrix(filter, filter.height);
     }
     return EXIT_SUCCESS;
 }

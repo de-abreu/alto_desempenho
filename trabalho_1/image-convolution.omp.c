@@ -67,7 +67,7 @@ int convolution(Matrix image, Matrix filter, int i, int j) {
 }
 
 Matrix processImage(Matrix src, Matrix filter, int *max, int *min) {
-    int i, j, sum, local_max = 0, local_min = HUES - 1;
+    int i, j, local_max = 0, local_min = HUES - 1;
     Matrix dest = {malloc(src.height * sizeof(int *)), src.height, src.width};
 
 #pragma omp parallel for
@@ -75,21 +75,25 @@ Matrix processImage(Matrix src, Matrix filter, int *max, int *min) {
         dest.value[i] = malloc(dest.width * sizeof(int));
 
 #pragma omp parallel for collapse(2) reduction(min : local_min)                \
-    reduction(max : local_max) private(sum)
+    reduction(max : local_max)
     for (i = 0; i < src.height; i++) {
         for (j = 0; j < src.width; j++) {
-            sum = convolution(src, filter, i, j);
-            if (sum > local_max) {
-                local_max = sum;
-            }
-            if (sum < local_min) {
-                local_min = sum;
-            }
+            dest.value[i][j] = convolution(src, filter, i, j);
+            if (dest.value[i][j] > local_max)
+                local_max = dest.value[i][j];
+            if (dest.value[i][j] < local_min)
+                local_min = dest.value[i][j];
         }
     }
+
     *min = local_min;
     *max = local_max;
+    return dest;
 }
+
+// NOTE: Function to save resulting image
+
+void saveImage(Matrix dest, char *dest_path) {}
 
 int main(void) {
     char src_path[256], dest_path[256];

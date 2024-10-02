@@ -1,6 +1,6 @@
 /* Autores:
  * Guilherme de Abreu Barreto, nUSP: 12543033
- * Miguel Reis Araujo        , nUSP: 12752457
+ * Miguel Reis de Araújo     , nUSP: 12752457
  */
 
 #include <limits.h>

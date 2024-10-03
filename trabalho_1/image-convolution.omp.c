@@ -32,8 +32,8 @@ Matrix storeImage(char *src_path, int padding) {
     for (i = 0; i < height; i++)
         image.value[i] = calloc(width, sizeof(int));
 
-    for (i = 0; i < height; i++)
-        for (j = 0; j < width; j++)
+    for (i = 0; i < image.height; i++)
+        for (j = 0; j < image.width; j++)
             fscanf(f, " %d", image.value[i + padding] + (j + padding));
     fclose(f);
     return image;
@@ -102,7 +102,7 @@ void saveImage(Matrix dest, char *dest_path) {
     int i, j;
     FILE *f = fopen(dest_path, "w");
 
-    printf("P2\n%d %d\n%d\n", dest.width, dest.height, HUES - 1);
+    fprintf(f, "P2\n%d %d\n%d\n", dest.width, dest.height, HUES - 1);
 
     for (i = 0; i < dest.height; i++) {
         fprintf(f, "%d", dest.value[i][0]);

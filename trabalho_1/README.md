@@ -12,7 +12,7 @@ Conforme proposta projetual, desenvolvemos um algoritmo de convolução com prog
 ## PCAM
 ### Particionamento
 
-Parte do algorítimo é paralelizada por dados e outra parte por instrução: observa-se no grafo abaixo, onde as tarefas que geram múltiplas tarefas indicam paralelização por instrução e as tarefas que estão anotadas como `**paralelizável**`, indicam paralelização por dados.
+Parte do algorítimo é paralelizada por dados e outra parte por instrução. Observa-se no grafo abaixo, onde as tarefas que geram múltiplas tarefas indicam paralelização por instrução e as tarefas que estão anotadas com `**Paralelizável**`, indicam paralelização por dados.
 
 Existe uma tarefa para ler as dimensões da imagem que gera outra tarefa para ler as dimensões do filtro. A última tarefa gera duas outras tarefas, uma para alocar a memória para armazenar a imagem e outra para ler o endereço da imagem de destino, que por sua vez irá gerar uma tarefa para ler o seed, que irá gerar uma tarefa para gerar o filtro.
 
@@ -30,49 +30,40 @@ Em seguida, partimos pra o salvamento e a exibição dos resultados, onde geramo
 
 ```mermaid
 flowchart TD
-    A[Início] --> B(Ler dimensões x,y da imagem)
-    subgraph r1 [Leitura e inicialização das variáveis]
+    start[Início] --> A1(Ler caminho da imagem de origem, de destino, tamanho do filtro, seed )
+    subgraph r1 [Inicialização de variáveis]
         style r1 stroke-dasharray: 5, 5, fill:none, stroke: grey
 
-        B --> E(Ler a dimensão f do filtro)
-        E --> AD(Ler endereço de imagem de destino)
-        AD --> F(Ler o Seed)
-        E --> G(Alocar memória para armazenar imagem)
-        G --> H(**Paralelizável:** para toda linha i = 0 a f/2, alocar memória inicializada a zero)
-        G --> M(**Paralelizável:** para toda linha de i = x + f/2 a x + f, alocar memória inicializada a zero)
-        I --> J(**Paralelizável:** para toda coluna de 0 a f/2 inicializar a zero)
-        I --> f(**Paralelizável:** para toda coluna j = f/2 a y + f/ 2 - 1 armazenar valor da imagem na posição i, j)
-        I --> L(**Paralelizável:** para toda coluna j = y + f/2 a y + f - 1 inicializar a zero)
-        G --> I(**Paralelizável:** para toda linha i = x + f/2 a x + f - 1)
-        F --> N(Gerar filtro)
+        A1 --> B1(Abrir e ler dimensões da imagem)
+        A1 --> A2(Gerar filtro)
+        B1 --> B2(**Paralelizável:** Alocar memória para armazenar imagem)
+        B2 --> B3(Ler e armazenar os valores da imagem)
+        B3 --> B4(Fechar imagem)
+
     end
     subgraph r2 [Processamento da imagem]
         style r2 stroke-dasharray: 5, 5, fill:none, stroke: grey
 
-        M --> O(**Paralelizável:** Inicializar variáveis locais de mínimo, máximo e somatório)
-        L --> O
-        f --> O
-        J --> O
-        H --> O
-        N --> O
-        O --> Q(**Paralelizável:** para cada linha i = f/2 a x + f/2 - 1 da imagem)
-        Q --> S(**Paralelizável:** para cada coluna j = f/2 a j + f/2 - 1 aplicar convolução)
-        S --> T(**Paralelizável:** para cada linha k no filtro e i + k na imagem)
-        T --> X(**Paralelizável:** para cada coluna l no filtro e j + l na imagem aplicar multiplicação e adicionar ao somatório)
-        X --> Y(Comparar somatórios locais e atribuir valor aos máximos e mínimos locais)
-        Y --> Z(Comparar máximos e mínimos locais e aferir o máximo e mínimo globais)
+        B4 --> C1(**Paralelizável:** Inicializar matriz da imagem de destino, variáveis locais de mínimo, máximo e somatório)
+        A2 --> C1
+        C1 --> C2(**Paralelizável:** para cada linha i = f/2 a x + f/2 - 1 da imagem)
+        C2 --> C3(**Paralelizável:** para cada coluna j = f/2 a j + f/2 - 1 aplicar convolução)
+        C3 --> C4(**Paralelizável:** para cada linha k no filtro e i + k na imagem)
+        C4 --> C5(**Paralelizável:** para cada coluna l no filtro e j + l na imagem aplicar multiplicação e adicionar ao somatório)
+        C5 --> C6(Comparar somatórios locais e atribuir valor aos máximos e mínimos locais)
+        C6 --> C7(Comparar máximos e mínimos locais e aferir o máximo e mínimo globais)
     end
     subgraph r3 [Escrita, exibição de resultados e desalocação da memória]
         style r3 stroke-dasharray: 5, 5, fill:none, stroke: grey
-        Z --> W(Imprime resultados)
-        Z --> AC(**Paralelizável:** Desaloca memória para filtro)
-        Z --> C(Salva resultado da convolução em imagem de destino)
-        C --> AB(**Paralelizável:** Desaloca memória para imagem)
+        C7 --> D1(Imprime resultados)
+        C7 --> D2(**Paralelizável:** Desaloca memória para filtro)
+        C7 --> D3(Salva resultado da convolução em imagem de destino)
+        D3 --> D4(**Paralelizável:** Desaloca memória para mstriz da imagem)
     end
 
-    AB --> EXIT(EXIT_SUCCESS)
-    AC --> EXIT
-    W --> EXIT
+    D1 --> EXIT(EXIT_SUCCESS)
+    D2 --> EXIT
+    D4 --> EXIT
 ```
 
 ### Comunicação
@@ -99,3 +90,11 @@ A estratégia de alocação de tarefas garante que cada thread acesse uma combin
 A atribuição de tarefas é realizada de forma dinâmica. Cada unidade de processamento deve ser alocada para um processo, e essa gestão é responsabilidade do Sistema Operacional da máquina. A expectativa é que a distribuição seja uniforme entre os elementos de processamento. Quando uma unidade de processamento fica ociosa, ela consome um bloco de tarefas do pool de processamento.
 
 ## Algoritmo e aplicação
+A seguir exibimos algumas imagens antes e após a aplicação da operação de convolução descrita pelo nosso [algoritmo](https://github.com/de-abreu/alto_desempenho/blob/main/trabalho_1/image-convolution.omp.c) com um filtro de tamanho `3` e seed `10`:
+
+| Antes                           | Depois                                  |
+| :---                            | :---                                    |
+| ![teste1](./imagens/teste1.jpg) | ![teste1_out](./imagens/teste1_out.jpg) |
+| ![teste2](./imagens/teste2.jpg) | ![teste2_out](./imagens/teste2_out.jpg) |
+| ![teste3](./imagens/teste3.jpg) | ![teste3_out](./imagens/teste3_out.jpg) |
+

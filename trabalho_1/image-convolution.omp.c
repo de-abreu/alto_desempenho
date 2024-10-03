@@ -66,9 +66,12 @@ int convolution(Matrix image, Matrix filter, int i, int j) {
 
 #pragma omp parallel for simd collapse(2) reduction(+ : sum)
     for (k = 0; k < filter.height; k++)
-        for (l = 0; l < filter.height; l++)
+        for (l = 0; l < filter.height; l++) {
             sum += (float)image.value[i + k][j + l] * filter.value[k][l] / 10;
-    return (sum >= HUES) ? HUES - 1 : sum;
+            if (sum >= HUES)
+                return HUES - 1;
+        }
+    return sum;
 }
 
 Matrix processImage(Matrix src, Matrix filter, int *max, int *min) {

@@ -64,7 +64,6 @@ int convolution(Matrix image, Matrix filter, int i, int j) {
     int k, l;
     float sum = 0;
 
-#pragma omp parallel for simd collapse(2) reduction(+ : sum)
     for (k = 0; k < filter.height; k++)
         for (l = 0; l < filter.height; l++) {
             sum += (float)image.value[i + k][j + l] * filter.value[k][l] / 10;

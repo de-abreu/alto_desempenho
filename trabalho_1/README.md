@@ -38,18 +38,15 @@ flowchart TD
 
         B4 --> C1(**Paralelizável:** Inicializar matriz da imagem de destino, variáveis locais de mínimo, máximo)
         A2 --> C1
-        C1 --> C2(**Paralelizável:** para cada linha i da imagem)
-        C2 --> C3(**Paralelizável:** para cada coluna j da linha)
-        C3 --> C4(**Paralelizável:** para cada linha k no filtro)
-        C4 --> C5(**Paralelizável:** para cada coluna l no filtro aplicar multiplicação e entre os valores na posição k, l do filtro e i + k, j + l da imagem e armazenar na posição i, j da matriz da imagem de destino)
-        C5 --> C6(Comparar e, se necessário for, atribuir, o valor obtido aos máximos e mínimos locais)
-        C6 --> C7(Comparar máximos e mínimos locais e aferir o máximo e mínimo globais)
+        C1 --> C2(**Paralelizável:** para cada linha i e coluna j da imagem, e para cada linha k e coluna l no filtro, aplicar multiplicação entre os valores na posição k, l do filtro e i + k, j + l da imagem, somar e armazenar na posição i, j da matriz da imagem de destino)
+        C2 --> C3(Comparar e, se necessário for, atribuir, o valor obtido aos máximos e mínimos locais)
+        C3 --> C4(Comparar máximos e mínimos locais e aferir o máximo e mínimo globais)
     end
     subgraph r3 [Escrita, exibição de resultados e desalocação da memória]
         style r3 stroke-dasharray: 5, 5, fill:none, stroke: grey
-        C7 --> D1(Imprime resultados)
-        C7 --> D2(**Paralelizável:** Desaloca memória para filtro)
-        C7 --> D3(Salva resultado da convolução em imagem de destino)
+        C4 --> D1(Imprime resultados)
+        C4 --> D2(**Paralelizável:** Desaloca memória para filtro)
+        C4 --> D3(Salva resultado da convolução em imagem de destino)
         D3 --> D4(**Paralelizável:** Desaloca memória para mstriz da imagem)
     end
 

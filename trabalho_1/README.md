@@ -5,7 +5,7 @@
 | Miguel Reis de Araújo      | 12752457 |
 
 ## Introdução
-Conforme proposta projetual, desenvolvemos um algoritmo de convolução com programação paralela por meio da metodologia PCAM (*Partitioning, Communication, Aglomeration, Mapping*). O algoritmo foi desenvolvido em duas versões: uma para submissão à plataforma de avaliação RunCodes, conforme especificado, e outra para aplicação sobre uma imagens em formato `.pgm`: um formato de arquivo para imagens rasterizadas monocromáticas.
+Conforme proposta projetual, desenvolvemos um algoritmo de convolução com programação paralela por meio da metodologia PCAM (*Partitioning, Communication, Aglomeration, Mapping*). O algoritmo foi desenvolvido em duas versões: [uma para submissão à plataforma de avaliação RunCodes](./runcodes-convolution.omp.c), conforme especificado, [e outra para aplicação sobre uma imagens em formato `.pgm`](./image-convolution.omp.c): um formato de arquivo para imagens rasterizadas monocromáticas. Estes divergem apenas no que tange a capacidade para o carregamento e leitura de dados de arquivos, e tomaremos o último como referência no presente relatório.
 
 À seguir são descritos o processo de aplicação do PCAM, o algoritmo em sua segunda versão e o resultado da aplicação sobre algumas imagens de amostra.
 
@@ -30,7 +30,7 @@ flowchart TD
         A1 --> A2(Gerar filtro)
         B1 --> B2(**Paralelizável:** Alocar memória para armazenar imagem)
         B2 --> B3(Ler e armazenar os valores da imagem)
-        B3 --> B4(Fechar imagem)
+        B3 --> B4(Fechar arquivo da imagem de origem)
 
     end
     subgraph r2 [Processamento da imagem]
@@ -61,7 +61,7 @@ Conforme pode ser observado no grafo, o algoritmo pode ser dividido em três gra
 
 Inicialmente, as dimensões obtidas pela entrada são enviadas para respectivas tarefas, que geram a imagem e o filtro de forma paralela.
 
-Para fazer o processamento da imagem, primeiro é necessário garantir que temos tanto a imagem quanto o filtro disponíveis, portanto precisamos fazer uma sincronização nessa etapa, que será feita através de uma barreira.
+Para fazer o processamento da imagem, primeiro é necessário garantir que temos tanto a imagem quanto o filtro disponíveis, portanto precisamos fazer uma sincronização nessa etapa por meio de uma barreira.
 
 Em seguida se inicia o processamento da imagem, que recebe os dados das tarefas anteriores e distribui para as respectivas tarefas que aplicam a convolução em cada pixel. Ao final do processamento é necessário outra barreira para garantir que todas as tarefas completaram antes de seguirmos para a próxima etapa. Também são utilizadas operações de redução para unificar o resultado da convolução e identificar o máximo e minimo global.
 
